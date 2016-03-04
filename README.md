@@ -1,6 +1,6 @@
 ### About Monograph
 
-Monograph is a quick-n-dirty prototyping tool for designers by Microsoft.
+Monograph is a quick-n-dirty prototyping tool for designers at Microsoft.
 
 This is the runtime library for Monograph. If you are not a developer, check out [Monograph for Adobe Illustrator](https://github.com/Pessimistress/Monograph.Illustrator) instead.
 
