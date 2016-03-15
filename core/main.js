@@ -47,7 +47,7 @@ var proto = (function() {
 		anim_ease = toFunction(settings.easing_func + "-" + settings.easing_mode),
 		anim_delay = toFunction(0);
 	var auto_scale = settings.auto_scale;
-	var state_ranks;
+	var state_ranks = [];
 
 	// events
 	var events = d3.dispatch("fallback", "ready", "focuschange", "navigate", "update");
@@ -225,7 +225,11 @@ var proto = (function() {
 
 		if (me._is_clip_) {
 			me._id_ = "url(#" + id + "_cp)";
-			me._parent_._clip_ = me;
+			parent._clip_ = me;
+			while(parent) {
+				parent._instance_.style("pointer-events", "none");
+				parent = parent._parent_;
+			}
 		}
 
 		me._button_ = obj.classed(btnClass) ? (new ButtonInfo(me, id)) : null;
@@ -313,7 +317,7 @@ var proto = (function() {
 			var ni;
 
 			for (var i = state_length; i--;) {
-				r = state_ranks ? state_ranks.indexOf(states[i]) : -1;
+				r = state_ranks.indexOf(states[i]);
 				if (r < 0) r = 1;
 				else r = state_ranks.length - r;
 				ranks[i] = r;
@@ -338,17 +342,22 @@ var proto = (function() {
 					artboards[i]._score_ = 0;
 				}
 
-				var pivot_state_index = states.indexOf(focusClass);
+				for(var i = state_ranks.length; i--; ) {
 
-				selectAll("." + focusClass + "." + objClass + ",." + focusClass + " ." + objClass).each(function(node) {
-					for (var k = 0; k < node._keyframes_.length; k++) {
-						var kf = node._keyframes_[k];
-						var ab = artboards[kf._artboard_],
-							ns = node._states_,
-							fs = kf._states_;
-						if (ab && fs[pivot_state_index]) ab._score_++;
-					}
-				});
+					var s = state_ranks[i];
+					var state_index = states.indexOf(s);
+
+					// check for artboard preference
+					selectAll("." + s + "." + objClass  + " *,." + s + "." + objClass).each(function(node) {
+						for (var k = 0; k < node._keyframes_.length; k++) {
+							var kf = node._keyframes_[k];
+							var ab = artboards[kf._artboard_],
+								ns = node._states_,
+								fs = kf._states_;
+							if (ab && fs[state_index]) ab._score_ += i;
+						}
+					});
+				}
 
 				var abName, abMax = -1;
 
