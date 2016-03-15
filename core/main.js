@@ -348,7 +348,7 @@ var proto = (function() {
 					var state_index = states.indexOf(s);
 
 					// check for artboard preference
-					selectAll("." + s + "." + objClass  + " *,." + s + "." + objClass).each(function(node) {
+					selectAll("." + s + " ." + objClass  + ",." + s + "." + objClass).each(function(node) {
 						for (var k = 0; k < node._keyframes_.length; k++) {
 							var kf = node._keyframes_[k];
 							var ab = artboards[kf._artboard_],
