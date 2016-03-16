@@ -1,5 +1,11 @@
 // Base extension - triggers for controller, keyboard and mouse
 
+proto.option("states", [
+	"press",
+	"focus",
+	"hover"
+]);
+
 proto.on("ready.input", function(load_evt) {
 	var isMaster = load_evt.isMaster;
 
@@ -14,14 +20,9 @@ proto.on("ready.input", function(load_evt) {
 	var define = prototype.define,
 		tell = prototype.tell,
 		trigger = prototype.trigger,
-		update = prototype.update;
+		update = prototype.update,
+		move = prototype.move;
 	var FOCUS = prototype.FOCUS;
-
-	prototype.option("states", [
-		"press",
-		"focus",
-		"hover"
-	]);
 
 	prototype.on("fallback", function(evt) {
 		var trigger_name = evt.type;
@@ -30,7 +31,13 @@ proto.on("ready.input", function(load_evt) {
 			case "R":
 			case "U":
 			case "D":
-				prototype.move(trigger_name);
+				move(trigger_name);
+				break;
+			case "TAB":
+				move("N");
+				break;
+			case "STAB":
+				move("P");
 				break;
 			case "B":
 			case "ESC":
@@ -355,66 +362,70 @@ proto.on("ready.input", function(load_evt) {
 
 	/*---- keyboard ----*/
 	if (settings.input_keyboard) {
-		listenTo("keydown", function(evt) {
-			var key = evt.keyCode;
 
-			switch (key) {
-				case 13: //enter
+		var handleKeyboardEvent = function(mapping, catch_all) {
+			return function(evt) {
+				var key = evt.keyCode;
+
+				if (evt.shiftKey) key += "+";
+				var trigger_name = catch_all(key) || mapping[key];
+				
+				if(trigger_name) {
+					trigger(FOCUS, trigger_name, sanitizeEventArgs(evt));
+					evt.preventDefault();
+				}
+			}
+		}
+
+		listenTo("keydown", handleKeyboardEvent(
+			{
+				37: "L",
+				38: "U",
+				39: "R",
+				40: "D",
+				9: "TAB",
+				"9+": "STAB"
+			},
+			function(key) {
+
+				tell(FOCUS, "_input keyboard");
+
+				if (key == 13) { // enter
 					if (!isEnterDown) {
 						isEnterDown = true;
 						tell(FOCUS, "_press");
 					}
-					break;
-				case 37: //left
-					return invoke("L");
-				case 38: //up
-					return invoke("U");
-				case 39: //right
-					return invoke("R");
-				case 40: //down
-					return invoke("D");
-				case 9: //tab
-					tell(FOCUS, "_input keyboard");
-					evt.preventDefault();
-					prototype.move(evt.shiftKey ? "P" : "N");
-					break;
+				}
 			}
+		));
 
-			function invoke(key) {
-				tell(FOCUS, "_input keyboard");
-				trigger(FOCUS, key, sanitizeEventArgs(evt));
-				evt.preventDefault();
-			}
-		});
+		listenTo("keyup", handleKeyboardEvent(
+			{
+				8: "BACK",
+				27: "ESC",
+				32: "SPACE",
+				33: "PGUP",
+				34: "PGDN",
+				35: "END",
+				36: "HOME",
+			},
+			function(key) {
 
-		listenTo("keyup", function(evt) {
-			var key = evt.keyCode;
+				var c = String.fromCharCode(key);
 
-			if (key >= 65 && key <= 90) {
-				return invoke(String.fromCharCode(key) + "Key");
-			}
-			if (key >= 48 && key <= 57) {
-				return invoke("D" + String.fromCharCode(key));
-			}
-
-			switch (key) {
-				case 27: //escape
-					return invoke("ESC");
-				case 32: //space
-					return invoke("SPACE");
-				case 8: //backspace
-					return invoke("BACK");
-				case 13: //enter
+				if (key >= 65 && key <= 90) {
+					return c + "Key";
+				}
+				else if (key >= 48 && key <= 57) {
+					return "D" + c;
+				}
+				else if(key == 13) { // enter
 					isEnterDown = false;
 					tell(FOCUS, "_release");
-					return invoke("ENTER");
+					return "ENTER";
+				}
 			}
-
-			function invoke(key) {
-				trigger(2, key, sanitizeEventArgs(evt));
-				evt.preventDefault();
-			}
-		});
+		));
 	}
 
 	/*---- mouse ----*/
