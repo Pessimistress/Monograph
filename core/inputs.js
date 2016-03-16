@@ -1,11 +1,5 @@
 // Base extension - triggers for controller, keyboard and mouse
 
-proto.option("states", [
-	"press",
-	"focus",
-	"hover"
-]);
-
 proto.on("ready.input", function(load_evt) {
 	var isMaster = load_evt.isMaster;
 
@@ -41,6 +35,7 @@ proto.on("ready.input", function(load_evt) {
 				break;
 			case "B":
 			case "ESC":
+			case "BACK":
 				tell(FOCUS, "back");
 				break;
 		}

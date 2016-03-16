@@ -47,7 +47,7 @@ var proto = (function() {
 		anim_ease = toFunction(settings.easing_func + "-" + settings.easing_mode),
 		anim_delay = toFunction(0);
 	var auto_scale = settings.auto_scale;
-	var state_ranks = [];
+	var state_ranks = ["press", "focus", "hover"];
 
 	// events
 	var events = d3.dispatch("fallback", "ready", "focuschange", "navigate", "update");
@@ -79,7 +79,6 @@ var proto = (function() {
 		N: 4,
 		P: 5
 	};
-	var artboardNamePattern = /^\S+/i;
 	var stateNamePattern = /[^:]+/g;
 	var pivotPattern = [
 		/u|y|a/i,
@@ -547,42 +546,37 @@ var proto = (function() {
 	}
 
 	function gotoScene(name, target_focus, override_default_focus) {
-		if (name) {
+		if (name && name != sceneName) {
 
-			var sb = name.match(artboardNamePattern)[0];
-			if (sb != sceneName) {
+			var abs = {};
+			var ab;
 
-				var abs = {};
-				var ab;
-
-				for (var i in allArtboards) {
-					var sbName = i.match(artboardNamePattern)[0];
-					if (sbName == sb) {
-						abs[i] = allArtboards[i];
-					}
+			for (var i in allArtboards) {
+				if (name == allArtboards[i].scene) {
+					abs[i] = allArtboards[i];
 				}
+			}
 
-				if (Object.keys(abs).length) {
-					// scene exists
+			if (Object.keys(abs).length) {
+				// scene exists
 
-					events.navigate.call(this, {
-						oldScene: sceneName,
-						newScene: sb
-					});
+				events.navigate.call(this, {
+					oldScene: sceneName,
+					newScene: name
+				});
 
-					sceneName = sb;
-					artboards = abs;
-					artboardName = Object.keys(abs)[0];
-					artboard = abs[artboardName];
+				sceneName = name;
+				artboards = abs;
+				artboardName = Object.keys(abs)[0];
+				artboard = abs[artboardName];
 
-					update(false, function() {
-						if (target_focus) {
-							proposeFocus(target_focus);
-						} else if (has_focus && !override_default_focus) {
-							proposeFocus();
-						}						
-					});
-				}
+				update(false, function() {
+					if (target_focus) {
+						proposeFocus(target_focus);
+					} else if (has_focus && !override_default_focus) {
+						proposeFocus();
+					}						
+				});
 			}
 		}
 	}
@@ -1072,7 +1066,7 @@ var proto = (function() {
 			listenTo("resize", resize);
 
 			// Go to default scene
-			gotoScene(Object.keys(allArtboards)[0]);
+			gotoScene(allArtboards[0].scene);
 			onLoad();
 		},
 		tell: function(target, command, passdata) {
