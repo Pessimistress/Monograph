@@ -4,7 +4,8 @@
 		"description": "Speech synthesis",
 		"author": "Xiaoji Chen (cxiaoji@gmail.com)",
 		"target": [1.4, 1.49],
-		"actions": ["say"]
+		"triggers": ["Speaking", "Spoken"],
+		"actions": ["say", "listen", "said"]
 	}
 */
 
@@ -55,5 +56,80 @@
 	} else {
 		console.log("Speech synthesis is not supported in this browser.")
 	}
+
+	if (window.webkitSpeechRecognition) {
+
+		var final_transcript;
+
+		var recognizing = false;
+		var error = false;
+		var start_time;
+
+		proto.define("listen", function() {
+			if (!recognizing) {
+				recognition.start();
+			}
+		});
+
+		proto.define("said", function(evt) {
+			if(evt.args[1].toLowerCase() == evt.data.text.toLowerCase()) {
+				var action = '"' + evt.args.slice(2).join('" "') + '"';
+				proto.tell(proto.SELF, action);
+			}
+		})
+
+		var recognition = new webkitSpeechRecognition();
+		recognition.continuous = false;
+		recognition.interimResults = true;
+		recognition.lang = "en-US";
+
+		recognition.onstart = function(event) {
+			recognizing = true;
+			final_transcript = '';
+			start_time = event.timeStamp;
+		};
+
+		recognition.onerror = function(event) {
+			console.log(event.error);
+			error = true;
+		};
+
+		recognition.onend = function() {
+			recognizing = false;
+			if (error) {
+				error = false;
+			}
+			else {
+				proto.trigger(proto.FOCUS, "Spoken", {
+					text: final_transcript,
+					start: start_time,
+					timeStamp: event.timeStamp
+				});
+			}
+		};
+
+		recognition.onresult = function(event) {
+			var interim_transcript = '';
+			if (typeof(event.results) == 'undefined') {
+				error = true;
+				recognition.stop();
+				return;
+			}
+			for (var i = event.resultIndex; i < event.results.length; ++i) {
+				if (event.results[i].isFinal) {
+					final_transcript += event.results[i][0].transcript;
+				} else {
+					interim_transcript += event.results[i][0].transcript;
+				}
+			}
+			proto.trigger(proto.FOCUS, "Speaking", {
+				text: final_transcript,
+				interim: interim_transcript,
+				start: start_time,
+				timeStamp: event.timeStamp
+			});
+		};
+	}
+
 
 })();
