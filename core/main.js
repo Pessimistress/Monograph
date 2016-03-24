@@ -124,13 +124,20 @@ var proto = (function() {
 		return select(selector).datum();
 	}
 
-	function combineStyles(d1, d2) {
-		var result = {};
-		for (var k in d1) {
-			result[k] = d1[k];
-		}
-		for (var k in d2) {
-			result[k] = d2[k];
+	function combineStyles(is_svg) {
+		var result = {}, 
+			args = arguments, 
+			svgPattern = /svg|fill|stroke/,
+			nonSvgPattern = /width|height|left|top|border|background/;
+		for(var i = 1; i < args.length; i++) {
+			var dict = args[i];
+			if(dict) {
+				for(var k in dict) {
+					if((is_svg && !k.search(nonSvgPattern)) ||
+						(!is_svg && !k.search(svgPattern))) continue;
+					result[k] = dict[k];
+				}
+			}
 		}
 		return result;
 	}
@@ -467,9 +474,7 @@ var proto = (function() {
 					}
 
 					if (old_style == null || forced || !equalStyles(node._keyframes_[old_style]._styles_, keyframe)) {
-						if (keyframe._base) {
-							keyframe = combineStyles(all_styles[keyframe._base], keyframe);
-						}
+						keyframe = combineStyles(node._is_svg_, all_styles[keyframe._base], keyframe);
 						applyStyle(obj, keyframe, old_style != null);
 					}
 
