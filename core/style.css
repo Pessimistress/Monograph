@@ -1,6 +1,7 @@
 * {
 	box-sizing: border-box;
 	pointer-events: none;
+	transform-origin: center;
 }
 html {
 	overflow: auto;
