@@ -88,7 +88,6 @@ var proto = (function() {
 	];
 	var nav_order = ["20310", "31022", "20132", "31200"];
 
-
 	/* utilities */
 	function first(arr, filter) {
 		for (var i = 0, n = arr.length; i < n; i++) {
@@ -523,12 +522,15 @@ var proto = (function() {
 	function applyStyle(obj, properties, use_transition) {
 		var attributes = {},
 			styles = {};
+		var transformTween = null;
 
 		for (var i in properties) {
 			if (i[0] == "_") continue;
 
 			if (i.search("svg-") == 0) {
 				attributes[i.slice(4)] = properties[i];
+			} else if(i == "transform" && use_transition) {
+				transformTween = getTransformTween(obj.node().style[i], properties[i]);
 			} else {
 				styles[i] = properties[i];
 			}
@@ -540,13 +542,52 @@ var proto = (function() {
 				delay = anim_delay(dom),
 				ease = anim_ease(dom).split(" ");
 
-			obj.transition()
+			var transition = obj.transition()
 				.ease(ease[0], ease[1])
 				.duration(dur)
 				.delay(delay)
 				.style(styles).attr(attributes);
+
+			if(transformTween) {
+				transformTween(transition);
+			}
+
 		} else {
 			obj.style(styles).attr(attributes);
+		}
+	}
+
+	// genertate smooth transition for CSS transform
+	function getTransformTween(from, to) {
+		var rotatePattern = /([-\d\.]+)(?=deg)/;
+
+		var from_rotates = from.split(rotatePattern),
+			to_rotates = to.split(rotatePattern);
+
+		for(var i = 1; i < to_rotates.length; i+=2) {
+			var a1 = from_rotates[i] * 1,
+				a2 = to_rotates[i] * 1;
+
+			if(isNaN(a1)) {
+				from += " rotate(0deg)";
+				a1 = 0;
+			}
+
+			// find the shortest path to rotate
+			var d = a2 - a1;
+			while(d > 180) d -= 360;
+			while(d < -180) d += 360;
+			to_rotates[i] = a1 + d;
+		}
+
+		var interp = d3.interpolateString(from, to_rotates.join(""));
+
+		return function(transition) {
+			transition.styleTween('transform', function (d) {
+			    return interp;
+			}).each("end", function() {
+				this.style.transform = to;
+			});
 		}
 	}
 
