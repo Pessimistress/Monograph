@@ -50,13 +50,27 @@
 		prototype.move(evt.args[1]);
 	});
 
+	var pendingActions = {};
 	define("wait", function(evt) {
 		var args = evt.args;
 		var message = assemble(args, 2);
 		var self = this;
-		setTimeout(function() {
+		var ticket = setTimeout(function() {
 			tell(self, message);
+			delete pendingActions[ticket];
 		}, args[1] * 1);
+
+		pendingActions[ticket] = this;
+	});
+
+	define("cancel-wait", function(evt) {
+		for(var ticket in pendingActions) {
+			var src = pendingActions[ticket];
+			if(this == src || this.contains(src)) {
+				clearTimeout(ticket);
+				delete pendingActions[ticket];
+			}
+		}
 	});
 
 	// navigate to a new storyboard
