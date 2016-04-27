@@ -66,7 +66,9 @@
 		proto.trigger(element, "animate");
 		var d = settings[element.id],
 			v = d && d[0];
-		return v == undefined ? default_dur : v
+		if(v == null) return default_dur;
+		else if(v[v.length-1] == "x") return default_dur * v.substr(0, v.length-1);
+		else return v;
 	});
 	proto.option("easing", function(element) {
 		var d = settings[element.id],
@@ -76,7 +78,9 @@
 	proto.option("delay", function(element) {
 		var d = settings[element.id],
 			v = d && d[1];
-		return v == undefined ? default_delay : v
+		if(v == null) return default_delay;
+		else if(v[v.length-1] == "x") return default_delay * v.substr(0, v.length-1);
+		else return v;
 	});
 
 })();
